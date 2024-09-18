@@ -31,8 +31,7 @@ export const theme = {
     dangerSolidHover: "#912400",
 
     backgroundBox: "#F3EDF7",
-    backgroundChat: "#ECE6F0",
-    primary: "#65558F",
+    primary: "#F2911B",
     secondary: "#E8DEF8",
     greyBackground: "#E7E0EC",
 

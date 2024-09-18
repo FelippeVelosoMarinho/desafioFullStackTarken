@@ -1,0 +1,32 @@
+services:
+  whisper:
+    build:
+      context: whisper
+      dockerfile: Dockerfile
+    container_name: whisper
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./whisper:/whisper/
+    working_dir: /whisper/
+    command: "python3 main.py"
+    networks:
+      - base_network
+      - lan_bridge
+
+  remove_noise:
+    build:
+      context: remove_noise
+      dockerfile: Dockerfile
+    container_name: remove_noise
+    ports:
+      - "8070:8070"
+    volumes:
+      - ./remove_noise:/app
+      - /app/rnnoise
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: "python3 main.py"
+    networks:
+      - base_network
+      - lan_bridge
