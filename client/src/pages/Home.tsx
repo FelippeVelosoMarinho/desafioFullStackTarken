@@ -1,10 +1,11 @@
 
-function Pacient() {
+
+function Home() {
   return (
-    <div>
-        HOME
-    </div>
-  );  
+    <h1>
+      123
+    </h1>
+  );
 }
 
-export default Pacient;
+export default Home;

@@ -1,12 +1,15 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-import Home from "../pages/Home";
+import MyLibrary from "../pages/MyLibrary";
+import Topbar from "../components/Topbar/Topbar";
 
 function AppRoutes() {
   return (
     <Router>
       <Routes>
-        <Route index element={<Home />} />
+        <Route path="/" element={<Topbar />}>
+          <Route index element={<MyLibrary />} />
+        </Route>
 
         <Route
           path="*"
