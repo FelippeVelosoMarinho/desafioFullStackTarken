@@ -1,15 +1,12 @@
-// src/components/SearchBar/SearchBar.styles.ts
 import styled from "styled-components";
 
 export const SearchContainer = styled.div`
-  width: 100%;
   margin-top: 20px; 
   border: 1px solid #DEDEDE;
-  display: flex;
-  align-items: center;
   border-radius: 4px;
-  font-family: "Inter, sans-serif";
+  font-family: "Inter", sans-serif;
   position: relative;
+  width: 442px; 
 `;
 
 export const SearchInput = styled.input`
@@ -21,6 +18,12 @@ export const SearchInput = styled.input`
   font-size: 16px;
   padding: 10px 15px;
   height: 40px;
+  width: calc(100% - 50px); 
+  
+  &::placeholder {
+    font-family: "Inter", sans-serif;
+    color: #999; 
+  }
 
   &:focus {
     outline: none;
@@ -49,8 +52,9 @@ export const SearchIcon = styled.div`
 
 export const DataResult = styled.div`
   position: absolute;
+  font-family: "Inter", sans-serif;
   top: 45px; 
-
+  width: 100%;
   max-height: 200px;
   background-color: white;
   box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
@@ -63,7 +67,7 @@ export const DataResult = styled.div`
   }
 
   .dataItem {
- 
+    width: 100%;
     padding: 10px 15px;
     display: flex;
     align-items: center;

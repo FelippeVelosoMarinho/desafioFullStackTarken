@@ -9,7 +9,4 @@ export const api = axios.create({
 
 export const OMDb = axios.create({
     baseURL: `http://www.omdbapi.com/?i=tt3896198&apikey=${token}`,
-    /*headers: {
-        Authorization: `Bearer ${token}`,
-    },*/
 });

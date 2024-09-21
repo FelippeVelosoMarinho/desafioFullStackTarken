@@ -12,13 +12,13 @@ interface Movie {
 }
 
 function MyLibrary() {
-  const [movies, setMovies] = useState<Movie[]>([]); // Usando o tipo definido
+  const [movies, setMovies] = useState<Movie[]>([]);
 
   useEffect(() => {
     const fetchMovies = async () => {
       try {
-        const response = await OMDb.get(""); // Endpoint para buscar filmes
-        setMovies([response.data]); // Armazena a lista de filmes
+        const response = await OMDb.get("");
+        setMovies([response.data]);
         console.log("Filmes: ", movies);
       } catch (error) {
         console.error("Error fetching movies:", error);
@@ -41,9 +41,12 @@ function MyLibrary() {
       >
         My Library
       </Typography>
-      <SearchBar 
-        placeholder="Search..." 
-        data={movies.map(movie => ({ title: movie.Title, link: `https://www.imdb.com/title/${movie.imdbID}/` }))} 
+      <SearchBar
+        placeholder="Search..."
+        data={movies.map((movie) => ({
+          title: movie.Title,
+          link: `https://www.imdb.com/title/${movie.imdbID}/`,
+        }))}
       />
       <CenterBox>
         <Typography

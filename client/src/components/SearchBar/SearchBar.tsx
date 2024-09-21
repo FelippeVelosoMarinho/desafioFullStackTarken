@@ -41,7 +41,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ placeholder, data }) => {
 
   return (
     <SearchContainer>
-      <div style={{ display: "flex" }}>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "end" }}>
         <SearchInput
           type="text"
           placeholder={placeholder}
