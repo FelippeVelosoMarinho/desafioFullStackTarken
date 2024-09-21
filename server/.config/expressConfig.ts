@@ -4,19 +4,19 @@ import cors, { CorsOptions } from "cors";
 
 dotenv.config();
 
-export const api: Express = express();
+export const app: Express = express();
 
 const options: CorsOptions = {
   origin: process.env.CLIENTURL,
   credentials: true,
 };
-api.use(cors(options));
+app.use(cors(options));
 
-api.use(express.json());
-api.use(express.urlencoded({
+app.use(express.json());
+app.use(express.urlencoded({
     extended: true
 }));
 
-//api.use("/api/reviews", ReviewRouter);
+//app.use("/app/reviews", ReviewRouter);
 
-export default api;
+export default app;

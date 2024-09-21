@@ -7,8 +7,8 @@ import { AuthProvider } from "./contexts/AuthContext";
 const App = () => (
   <ThemeProvider theme={theme}>
     <AuthProvider>
-      <GlobalStyle />
-      <Routes />
+      <GlobalStyle/>
+        <Routes />
     </AuthProvider>
   </ThemeProvider>
 );

@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const token = process.env.TOKEN_API;
+//const token = process.env.TOKEN_API;eafe20b1 
+const token = "eafe20b1"; 
 
 export const api = axios.create({
   baseURL: "http://localhost:3030",

@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import MyLibrary from "../pages/MyLibrary";
+import Search from "../pages/Search";
 import Topbar from "../components/Topbar/Topbar";
 
 function AppRoutes() {
@@ -9,6 +10,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<Topbar />}>
           <Route index element={<MyLibrary />} />
+          <Route path="/search" element={<Search />} />
         </Route>
 
         <Route

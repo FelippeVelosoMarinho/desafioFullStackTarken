@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate  } from "react-router-dom";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
@@ -8,13 +8,17 @@ import Button from "@mui/material/Button";
 import { theme } from "../../styles/theme";
 import Moovy from "../../assets/moovy.svg";
 
+
+
 import { TopbarBox } from "./index.tsx";
 
 function Topbar() {
+  const navigate = useNavigate();
   const [selectedOption, setSelectedOption] = useState(null);
 
   const handleOptionClick = (option: any) => {
     setSelectedOption(option);
+    navigate(option);
   };
 
   return (
@@ -38,20 +42,20 @@ function Topbar() {
             </IconButton>
 
             <Button
-              onClick={() => handleOptionClick("search")}
+              onClick={() => handleOptionClick("/search")}
               sx={{
                 color:
-                  selectedOption === "search" ? theme.colors.primary : "black",
+                  selectedOption === "/search" ? theme.colors.primary : "black",
                 fontFamily: "Inter, sans-serif",
               }}
             >
               Search
             </Button>
             <Button
-              onClick={() => handleOptionClick("myLibrary")}
+              onClick={() => handleOptionClick("/")}
               sx={{
                 color:
-                  selectedOption === "myLibrary"
+                  selectedOption === "/"
                     ? theme.colors.primary
                     : "black",
                 fontFamily: "Inter, sans-serif",
