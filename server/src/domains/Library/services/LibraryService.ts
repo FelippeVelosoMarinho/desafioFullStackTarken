@@ -1,5 +1,3 @@
-// src/services/LibraryService.ts
-
 import prisma from "../../../../.config/client";
 import { Library } from "@prisma/client";
 

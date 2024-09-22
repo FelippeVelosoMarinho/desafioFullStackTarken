@@ -1,3 +1,5 @@
+// src/app.ts
+
 import dotenv from "dotenv";
 import express, { Express } from "express";
 import cors, { CorsOptions } from "cors";
@@ -10,23 +12,35 @@ import UserRouter from "../src/domains/User/controllers/index";
 
 dotenv.config();
 
-export const app: Express = express();
+const app: Express = express();
 
-const options: CorsOptions = {
-  origin: process.env.CLIENTURL,
+const corsOptions: CorsOptions = {
+  origin: process.env.APP_URL || "*", // Use "*" para testes, substitua por URLs específicas em produção
   credentials: true,
 };
-app.use(cors(options));
 
+app.use(cors(corsOptions));
 app.use(express.json());
-app.use(express.urlencoded({
-    extended: true
-}));
+app.use(express.urlencoded({ extended: true }));
 
-app.use("/app/reviews", ReviewRouter);
-app.use("/app/libraryroute", LibraryRouter);
-app.use("/app/librarymoviesrouter", LibraryMoviesRouter);
-app.use("/app/movie", MovieRouter);
-app.use("/app/user", UserRouter);
+// Montagem das rotas com prefixo /api
+app.use("/api/reviews", ReviewRouter);
+app.use("/api/libraries", LibraryRouter);
+app.use("/api/library-movies", LibraryMoviesRouter);
+app.use("/api/movies", MovieRouter);
+app.use("/api/users", UserRouter);
+
+console.log("Rotas montadas corretamente.");
+
+// Rota de Teste
+app.get("/api/test", (req, res) => {
+  res.status(200).json({ message: "API está funcionando corretamente!" });
+});
+
+// Rota padrão
+app.get("/", (req, res) => {
+  res.status(200).send("Bem-vindo à API do Sistema de Biblioteca de Filmes!");
+});
+
 
 export default app;
