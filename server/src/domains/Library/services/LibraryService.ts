@@ -7,7 +7,6 @@ class LibraryService {
     /**
      * Cria uma nova biblioteca para um usuário.
      * @param userId - ID do usuário proprietário da biblioteca.
-     * @param name - Nome da biblioteca.
      * @returns A biblioteca criada.
      */
     async create(userId: number): Promise<Library> {

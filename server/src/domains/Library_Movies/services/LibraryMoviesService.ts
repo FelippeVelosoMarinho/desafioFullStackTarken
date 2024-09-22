@@ -1,5 +1,3 @@
-// src/services/LibraryMoviesService.ts
-
 import prisma from "../../../../.config/client";
 import { Library_Movies } from "@prisma/client";
 
@@ -10,14 +8,15 @@ class LibraryMoviesService {
      * @param movieId - ID do filme.
      * @returns A relação criada entre a biblioteca e o filme.
      */
-    async addMovieToLibrary(libraryId: number, movieId: number): Promise<Library_Movies> {
+    async addMovieToLibrary(
+        libraryId: number,
+        movieId: number
+    ): Promise<Library_Movies> {
         // Verifica se a relação já existe
-        const existingRelation = await prisma.library_Movies.findUnique({
+        const existingRelation = await prisma.library_Movies.findFirst({
             where: {
-                libraryId_movieId: {
-                    libraryId,
-                    movieId,
-                },
+                libraryId,
+                movieId,
             },
         });
 
@@ -25,6 +24,7 @@ class LibraryMoviesService {
             throw new Error("O filme já está na biblioteca.");
         }
 
+        // Cria a relação entre a biblioteca e o filme
         const libraryMovie = await prisma.library_Movies.create({
             data: {
                 library: { connect: { id: libraryId } },
@@ -41,30 +41,30 @@ class LibraryMoviesService {
      * @param movieId - ID do filme.
      * @returns A relação removida.
      */
-    async removeMovieFromLibrary(userId: number, movieId: number): Promise<Library_Movies> {
-        // Verificar se a biblioteca do usuário existe e se o filme está na biblioteca
+    async removeMovieFromLibrary(
+        libraryId: number,
+        movieId: number
+    ): Promise<Library_Movies> {
+        // Verifica se o filme está na biblioteca
         const libraryMovie = await prisma.library_Movies.findFirst({
             where: {
-                library: {
-                    userId,
-                },
+                libraryId,
                 movieId,
             },
         });
 
-        // Se o filme não estiver na biblioteca, retornar um erro
         if (!libraryMovie) {
-            throw new Error("Movie not found in the library");
+            throw new Error("O filme não está na biblioteca.");
         }
 
-        // Remover o filme da biblioteca
-        await prisma.library_Movies.delete({
+        // Remove o filme da biblioteca
+        const deletedLibraryMovie = await prisma.library_Movies.delete({
             where: {
                 id: libraryMovie.id,
             },
         });
 
-        return { message: "Movie removed from library" };
+        return deletedLibraryMovie;
     }
 
     /**
