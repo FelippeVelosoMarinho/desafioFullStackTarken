@@ -17,26 +17,40 @@ interface DataItem {
 
 interface SearchBarProps {
   placeholder: string;
-  data: DataItem[];
+  data: DataItem[] | undefined; // Aceita 'undefined' para evitar erro
+  onSearch: (searchTerm: string) => void; // Adiciona a função de busca
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ placeholder, data }) => {
+const SearchBar: React.FC<SearchBarProps> = ({ placeholder, data = [], onSearch }) => {
   const [filteredData, setFilteredData] = useState<DataItem[]>([]);
   const [wordEntered, setWordEntered] = useState<string>("");
 
+  // Filtra os dados da pesquisa com base no texto inserido
   const handleFilter = (event: React.ChangeEvent<HTMLInputElement>) => {
     const searchWord = event.target.value;
     setWordEntered(searchWord);
-    const newFilter = data.filter((value) => {
-      return value.title.toLowerCase().includes(searchWord.toLowerCase());
-    });
 
-    setFilteredData(searchWord === "" ? [] : newFilter);
+    // Verifica se 'data' é um array antes de aplicar o 'filter'
+    if (data && data.length > 0) {
+      const newFilter = data.filter((value) =>
+        value.title.toLowerCase().includes(searchWord.toLowerCase())
+      );
+
+      setFilteredData(searchWord === "" ? [] : newFilter);
+    } else {
+      setFilteredData([]);
+    }
   };
 
+  // Limpa o input de pesquisa
   const clearInput = () => {
     setFilteredData([]);
     setWordEntered("");
+  };
+
+  // Dispara a função de pesquisa ao clicar no ícone de pesquisa
+  const handleSearchClick = () => {
+    onSearch(wordEntered); // Chama a função de busca passando o termo de pesquisa
   };
 
   return (
@@ -48,7 +62,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ placeholder, data }) => {
           value={wordEntered}
           onChange={handleFilter}
         />
-        <SearchIcon>
+        <SearchIcon onClick={handleSearchClick}> {/* Adiciona a função ao clicar */}
           {filteredData.length === 0 ? (
             <SearchIconMaterial />
           ) : (

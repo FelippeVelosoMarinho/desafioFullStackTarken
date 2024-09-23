@@ -4,7 +4,7 @@ import { CenterBox, MainBox } from "../components/Components";
 import Typography from "@mui/material/Typography";
 import SearchBar from "../components/SearchBar/SearchBar";
 
-import { OMDb } from "../api";
+import { OMDbSearch } from "../api";
 
 interface Movie {
   Title: string;
@@ -17,7 +17,7 @@ function MyLibrary() {
   useEffect(() => {
     const fetchMovies = async () => {
       try {
-        const response = await OMDb.get("");
+        const response = await OMDbSearch.get("");
         setMovies([response.data]);
         console.log("Filmes: ", movies);
       } catch (error) {

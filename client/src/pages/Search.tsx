@@ -3,198 +3,146 @@ import Loupe from "../assets/loupe.svg";
 import { CenterBox, MainBox } from "../components/Components";
 import Typography from "@mui/material/Typography";
 import SearchBar from "../components/SearchBar/SearchBar";
-import Toastr from "../components/Toastr";
-import { toast } from "react-toastify";
-import MovieList from "../components/MovieList"; // Assumindo que MovieList seja um componente de lista de filmes
-import AddLibrary from "../components/AddLibrary"; // Componente para adicionar favoritos
-import { OMDb } from "../api"; // API de busca de filmes
+import Toastr, { notifySuccess, notifyError } from "../components/Toastr";
+import MovieDisplay from "../components/MovieList/MovieDisplay";
+import { api, OMDbSearch, token } from "../api";
 
-interface Movie {
-  Title: string;
+interface MovieType {
   imdbID: string;
+  Title: string;
+  Poster: string;
+  imdbRating?: string;
 }
 
 function Search() {
-  // Estado para filmes, favoritos e o valor da pesquisa
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [library, setlibrary] = useState<Movie[]>([]);
-  const [searchValue, setSearchValue] = useState('');
+  const [movies, setMovies] = useState<MovieType[]>([]);
+  const [library, setLibrary] = useState<MovieType[]>([]);
+  const [searchValue, setSearchValue] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Função para buscar filmes
   const getMovieRequest = async (searchValue: string) => {
+    if (searchValue.length < 3) {
+      notifyError("Digite pelo menos 3 caracteres para a busca.");
+      return;
+    }
+
+    setLoading(true);
+    console.log("Fazendo uma pesquisinha: ", searchValue);
     try {
-      const response = await OMDb.get(`?s=${searchValue}`);
+      const response = await OMDbSearch.get(`?s=${encodeURIComponent(searchValue)}&apikey=${token}`);
       if (response.data.Search) {
+        console.log("OMDb request: ", response.data.Search);
         setMovies(response.data.Search);
       } else {
-        setMovies([]); // Limpa a lista se não encontrar filmes
+        setMovies([]);
       }
     } catch (error) {
       console.error("Error fetching movies:", error);
+      notifyError("Erro ao buscar filmes.");
+      setMovies([]); // Limpa os filmes em caso de erro
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Busca filmes com base no valor da pesquisa sempre que `searchValue` muda
-  useEffect(() => {
-    if (searchValue !== '') {
-      getMovieRequest(searchValue);
-    }
-  }, [searchValue]);
-
-  // Função para buscar favoritos ao carregar a página
   useEffect(() => {
     const fetchLibrary = async () => {
       try {
-        const response = await fetch("http://localhost:3000/api/moovy");
-        setLibrary(await response.json());
+        const response = await api.get("/libraries/2");
+        if (response.data && response.data.movies) {
+          console.log("Library fetch for id 2: ", response.data.movies);
+          setLibrary(response.data.movies);
+        } else {
+          throw new Error("Erro ao buscar a biblioteca.");
+        }
       } catch (error) {
         console.error("Error fetching Library:", error);
+        notifyError("Erro ao buscar a biblioteca.");
       }
     };
 
     fetchLibrary();
   }, []);
 
-  // Função para adicionar filmes aos favoritos
-  const addFavoriteMovie = async (movie: Movie) => {
+  const addFavoriteMovie = async (movie: MovieType) => {
     try {
-      const response = await fetch("http://localhost:3000/api/moovy", {
-        method: "POST",
-        body: JSON.stringify({
-          movieID: movie.imdbID,
-          isReview: 0,
-        }),
-        headers: {
-          "Content-Type": "application/json",
+      const response = await api.post(
+        "/library-movies/1/movies",
+        {
+          movieId: movie.imdbID,
+          libraryId: 2,
         },
-      });
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (response.status === 201) {
-        toast.success("Added to your Library");
-        setLibrary((prev) => [...prev, movie]); // Atualiza favoritos localmente
+        notifySuccess("Adicionado à sua Biblioteca");
+      } else if (response.status === 400) {
+        notifyError("O filme já está na sua Biblioteca");
       } else {
-        toast.error("The movie is already in your Library");
+        notifyError("Erro ao adicionar o filme à Biblioteca");
       }
     } catch (error) {
       console.error("Error adding favorite:", error);
+      if (error.response && error.response.status === 400) {
+        notifyError("O filme já está na sua Biblioteca");
+      } else {
+        notifyError("Erro ao adicionar o filme à Biblioteca");
+      }
     }
   };
 
-  // Renderização condicional baseada no estado dos filmes e do valor de busca
-  if (movies.length === 0 && searchValue !== '') {
-    return (
-      <MainBox>
-        <Typography
-          variant="h4"
-          component="div"
-          sx={{
-            flexGrow: 1,
-            fontFamily: "Inter, sans-serif",
-            fontWeight: "bold",
-          }}
-        >
-          Search
-        </Typography>
-        <SearchBar
-          placeholder="Search..."
-          searchValue={searchValue}
-          setSearchValue={setSearchValue}
-        />
+  return (
+    <MainBox>
+      <Typography
+        variant="h4"
+        component="div"
+        sx={{
+          flexGrow: 1,
+          fontFamily: "Inter, sans-serif",
+          fontWeight: "bold",
+        }}
+      >
+        Search
+      </Typography>
+      <SearchBar
+        placeholder="Search..."
+        searchValue={searchValue}
+        setSearchValue={setSearchValue}
+        onSearch={getMovieRequest}
+      />
+      <Toastr />
+
+      {loading ? (
         <CenterBox>
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{ flexGrow: 1, fontFamily: "Inter, sans-serif" }}
-          >
-            <img src={Loupe} alt="Loupe" style={{ opacity: "0.5" }} />
-          </Typography>
-          <Typography
-            variant="h5"
-            component="div"
-            sx={{
-              height: "60%",
-              width: "35%",
-              flexGrow: 1,
-              fontFamily: "Inter, sans-serif",
-              textAlign: "center",
-            }}
-          >
-            We couldn´t find the movies you were looking for :(
+          <Typography variant="h5" component="div">
+            Carregando...
           </Typography>
         </CenterBox>
-      </MainBox>
-    );
-  } else if (searchValue === '') {
-    return (
-      <MainBox>
-        <Typography
-          variant="h4"
-          component="div"
-          sx={{
-            flexGrow: 1,
-            fontFamily: "Inter, sans-serif",
-            fontWeight: "bold",
-          }}
-        >
-          Search
-        </Typography>
-        <SearchBar
-          placeholder="Search..."
-          searchValue={searchValue}
-          setSearchValue={setSearchValue}
-        />
-        <CenterBox>
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{ flexGrow: 1, fontFamily: "Inter, sans-serif" }}
-          >
-            <img src={Loupe} alt="Loupe" style={{ opacity: "0.5" }} />
-          </Typography>
-          <Typography
-            variant="h5"
-            component="div"
-            sx={{
-              height: "60%",
-              width: "35%",
-              flexGrow: 1,
-              fontFamily: "Inter, sans-serif",
-              textAlign: "center",
-            }}
-          >
-            Type a movie name to search.
-          </Typography>
-        </CenterBox>
-      </MainBox>
-    );
-  } else {
-    return (
-      <MainBox>
-        <Typography
-          variant="h4"
-          component="div"
-          sx={{
-            flexGrow: 1,
-            fontFamily: "Inter, sans-serif",
-            fontWeight: "bold",
-          }}
-        >
-          Search
-        </Typography>
-        <SearchBar
-          placeholder="Search..."
-          searchValue={searchValue}
-          setSearchValue={setSearchValue}
-        />
-        <Toastr /> {/* Notificações */}
-        <MovieList
-          movies={movies}
-          handleLibraryClick={addFavoriteMovie}
-          favoriteComponent={AddLibrary}
-        />
-      </MainBox>
-    );
-  }
+      ) : (
+        <>
+          {movies.length > 0 ? (
+            <MovieDisplay
+              movies={movies}
+              onAddToLibrary={addFavoriteMovie}
+              library={library}
+            />
+          ) : (
+            <CenterBox>
+              {/* Mensagem para quando não houver resultados */}
+              <Typography variant="h5" component="div">
+                Nenhum resultado encontrado.
+              </Typography>
+            </CenterBox>
+          )}
+        </>
+      )}
+    </MainBox>
+  );
 }
 
 export default Search;
