@@ -10,7 +10,7 @@ class LibraryMoviesService {
      */
     async addMovieToLibrary(
         libraryId: number,
-        movieId: number
+        movieId: string
     ): Promise<Library_Movies> {
         // Verifica se a relação já existe
         const existingRelation = await prisma.library_Movies.findFirst({
@@ -43,7 +43,7 @@ class LibraryMoviesService {
      */
     async removeMovieFromLibrary(
         libraryId: number,
-        movieId: number
+        movieId: string
     ): Promise<Library_Movies> {
         // Verifica se o filme está na biblioteca
         const libraryMovie = await prisma.library_Movies.findFirst({

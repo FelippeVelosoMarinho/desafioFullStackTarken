@@ -143,9 +143,9 @@ router.get("/user/:userId", async (req: Request, res: Response, next: NextFuncti
  */
 router.get("/movie/:movieId", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const movieId = Number(req.params.movieId);
+    const movieId = req.params.movieId;
 
-    if (isNaN(movieId)) {
+    if (movieId == "") {
       return res.status(statusCodes.BAD_REQUEST).json({ error: "movieId inválido." });
     }
 

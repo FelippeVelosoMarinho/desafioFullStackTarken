@@ -1,5 +1,8 @@
 import React from 'react';
+import { useEffect, useState } from "react";
+import { notifyError } from "../Toastr";
 import { MovieContainer, MovieImage, MovieTitle, MovieRating, MovieButton, MovieInfo } from './index';
+import { api } from "../../api/index";
 
 interface MovieType {
     imdbID: string;
@@ -9,7 +12,7 @@ interface MovieType {
 }
 
 interface MovieProps {
-    movie: MovieType; 
+    movie: MovieType;
     onAddToLibrary: (movie: MovieType) => void;
     isAdded: boolean;
 }
@@ -21,8 +24,8 @@ const Movie: React.FC<MovieProps> = ({ movie, onAddToLibrary, isAdded }) => {
             <MovieInfo>
                 <MovieTitle>{movie.Title}</MovieTitle>
                 <MovieRating>⭐ {movie.imdbRating || "N/A"}</MovieRating>
-                <MovieButton added={isAdded} onClick={() => onAddToLibrary(movie)}> {/* Passa o movie completo */}
-                    {isAdded ? "Added to Library" : "Add to My Library"}
+                <MovieButton added={isAdded} onClick={() => onAddToLibrary(movie)}>
+                    {isAdded ? "Remove" : "Add to My Library"}
                 </MovieButton>
             </MovieInfo>
         </MovieContainer>
@@ -36,11 +39,29 @@ interface MovieDisplayProps {
         Poster: string;
         imdbRating?: string;
     }>;
-    onAddToLibrary: (movie: MovieType) => void; // Altere aqui para usar MovieType
+    onAddToLibrary: (movie: MovieType) => void;
     library: Array<{ imdbID: string }>;
 }
 
 const MovieDisplay: React.FC<MovieDisplayProps> = ({ movies, onAddToLibrary, library }) => {
+    const [libraryAdd, setLibraryAdd] = useState<Set<string>>(new Set());
+
+    // Carrega os filmes da biblioteca
+    useEffect(() => {
+        const fetchFilmOnLibrary = async () => {
+            try {
+                const response = await api.get("/library-movies/1/movies");
+                // Supondo que a resposta tenha a estrutura correta
+                const libraryMovies = response.data.map((movie: MovieType) => movie.imdbID);
+                setLibraryAdd(new Set(libraryMovies)); // Armazena como um Set
+            } catch (error) {
+                console.log("Erro: ", error);
+                notifyError("Erro ao buscar a biblioteca.");
+            }
+        };
+        fetchFilmOnLibrary();
+    }, []);
+
     return (
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center" }}>
             {movies.map(movie => (

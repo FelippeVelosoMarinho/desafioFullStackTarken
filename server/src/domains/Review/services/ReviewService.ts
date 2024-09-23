@@ -13,7 +13,7 @@ class ReviewService {
         content: string;
         rating: number;
         userId: number;
-        movieId: number;
+        movieId: string;
     }): Promise<Review> {
         // Validação opcional: Verificar se o usuário e o filme existem
         const user = await prisma.user.findUnique({ where: { id: data.userId } });
@@ -119,7 +119,7 @@ class ReviewService {
      * @param movieId - ID do filme.
      * @returns Lista de resenhas do filme.
      */
-    async findByMovie(movieId: number): Promise<Review[]> {
+    async findByMovie(movieId: string): Promise<Review[]> {
         return await prisma.review.findMany({
             where: { movieId },
             include: {

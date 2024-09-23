@@ -2,7 +2,7 @@ import styled from "styled-components";
 
 export const MovieContainer = styled.div`
   width: 364.67px;
-  height: 548px;
+  height: 640px;
   margin: 20px;
   border: 1px solid #ccc;
   border-radius: 10px;
@@ -15,8 +15,7 @@ export const MovieContainer = styled.div`
   cursor: pointer;
 
     &:hover {
-      width: 366.67px;
-      height: 550px;
+      box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.3);
   }
 `;
 
@@ -28,11 +27,13 @@ export const MovieImage = styled.img`
 `;
 
 export const MovieInfo = styled.div`
+  font-family: "Inter", sans-serif;
   padding: 10px;
   text-align: center;
 `;
 
 export const MovieTitle = styled.h2`
+  font-family: "Inter", sans-serif;
   font-size: 1.5em;
   margin: 10px 0;
 `;
@@ -52,12 +53,13 @@ export const MovieButton = styled.button<MovieButtonProps>`
   margin: 10px auto;
   height: 46px;
   border-radius: 15px;
-  background-color: ${(props) => (props.added ? "#ccc" : "#4caf50")};
+  background-color: ${(props) => (props.added ? "#FE6D8E" : "#0ACF83")};
   color: #fff;
   border: none;
   cursor: pointer;
+  font-family: "Inter", sans-serif;
 
   &:hover {
-    background-color: ${(props) => (props.added ? "#bbb" : "#45a049")};
+    opacity: 0.8;
   }
 `;

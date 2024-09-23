@@ -33,9 +33,9 @@ router.post("/:libraryId/movies", async (req: Request, res: Response, next: Next
 router.delete("/:libraryId/movies/:movieId", async (req: Request, res: Response, next: NextFunction) => {
     try {
         const libraryId = Number(req.params.libraryId);
-        const movieId = Number(req.params.movieId);
+        const movieId = req.params.movieId;
 
-        if (isNaN(libraryId) || isNaN(movieId)) {
+        if (isNaN(libraryId) || movieId === "") {
             return res.status(statusCodes.BAD_REQUEST).json({ error: "libraryId e movieId devem ser números válidos." });
         }
 

@@ -33,14 +33,14 @@ model Library {
 model Library_Movies {
   id         Int      @id @default(autoincrement())
   libraryId  Int
-  movieId    Int
+  movieId    String 
   library    Library   @relation(fields: [libraryId], references: [id])
   movie      Movie     @relation(fields: [movieId], references: [id])
   addedAt    DateTime  @default(now())
 }
 
 model Movie {
-  id          Int      @id @default(autoincrement())
+  id          String       @id 
   name        String
   posterUrl   String
   imdbGrade   Float
@@ -61,5 +61,5 @@ model Review {
   userId        Int
 
   movie         Movie         @relation(fields: [movieId], references: [id])
-  movieId       Int
+  movieId       String
 }

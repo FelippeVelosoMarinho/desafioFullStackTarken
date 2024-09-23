@@ -11,13 +11,14 @@ const router = Router();
  */
 router.post("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, posterUrl, imdbGrade, releaseDate, genre, description } = req.body;
+    const { id, name, posterUrl, imdbGrade, releaseDate, genre, description } = req.body;
 
-    if (!name || !posterUrl || imdbGrade === undefined || !releaseDate || !genre || !description) {
+    if (id === "" || !name || !posterUrl || imdbGrade === undefined || !releaseDate || !genre || !description) {
       return res.status(statusCodes.BAD_REQUEST).json({ error: "Todos os campos são obrigatórios." });
     }
 
     const movie = await MovieService.create({
+      id,
       name,
       posterUrl,
       imdbGrade,
@@ -53,9 +54,9 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
  */
 router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = Number(req.params.id);
+    const id = req.params.id;
 
-    if (isNaN(id)) {
+    if (id === "") {
       return res.status(statusCodes.BAD_REQUEST).json({ error: "ID do filme inválido." });
     }
 
@@ -78,10 +79,10 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
  */
 router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = Number(req.params.id);
+    const id = req.params.id;
     const { name, posterUrl, imdbGrade, releaseDate, genre, description } = req.body;
 
-    if (isNaN(id)) {
+    if (id === "") {
       return res.status(statusCodes.BAD_REQUEST).json({ error: "ID do filme inválido." });
     }
 
@@ -107,9 +108,9 @@ router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
  */
 router.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = Number(req.params.id);
+    const id = req.params.id;
 
-    if (isNaN(id)) {
+    if (id === "") {
       return res.status(statusCodes.BAD_REQUEST).json({ error: "ID do filme inválido." });
     }
 
