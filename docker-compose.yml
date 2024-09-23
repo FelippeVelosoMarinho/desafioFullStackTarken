@@ -1,3 +1,4 @@
+version: '3'
 services:
   server:
     container_name: server
@@ -7,6 +8,8 @@ services:
     ports:
       - "3030:3030"
     command: npm run start
+    networks:
+      - app-network
 
   client:
     container_name: client
@@ -21,4 +24,10 @@ services:
       - ./client/api:/app/client/api
     depends_on: 
       - server
-    command: ["/bin/sh", "-c", "npm run dev -- --host 0.0.0.0"] 
+    command: ["/bin/sh", "-c", "npm run dev -- --host 0.0.0.0"]
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

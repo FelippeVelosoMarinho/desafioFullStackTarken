@@ -4,7 +4,7 @@ import { CenterBox, MainBox } from "../components/Components";
 import Typography from "@mui/material/Typography";
 import SearchBar from "../components/SearchBar/SearchBar";
 import Toastr, { notifySuccess, notifyError } from "../components/Toastr";
-import MovieDisplay from "../components/MovieList/MovieDisplay";
+import SearchMovieDisplay from "../components/MovieList/SearchMovieDisplay";
 import { api, OMDbSearch, token } from "../api";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -124,7 +124,7 @@ function Search() {
     }
   };
 
-  // Função para remover o filme após a confirmação
+   // Função para remover o filme após a confirmação
   const confirmRemoveMovie = async () => {
     if (selectedMovie) {
       try {
@@ -145,6 +145,7 @@ function Search() {
       }
     }
   };
+
 
   return (
     <MainBox>
@@ -176,7 +177,7 @@ function Search() {
       ) : (
         <>
           {movies.length > 0 ? (
-            <MovieDisplay
+            <SearchMovieDisplay
               movies={movies}
               onAddToLibrary={addFavoriteMovie}
               library={library}

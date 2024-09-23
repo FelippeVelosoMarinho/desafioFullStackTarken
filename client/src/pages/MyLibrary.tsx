@@ -1,5 +1,3 @@
-// src/pages/MyLibrary.tsx
-
 import { useEffect, useState } from "react";
 import Loupe from "../assets/loupe.svg";
 import { CenterBox, MainBox } from "../components/Components";
@@ -45,7 +43,7 @@ function MyLibrary() {
             Poster: movie.posterUrl,
             imdbRating: movie.imdbGrade?.toString() || "N/A",
             Year: new Date(movie.releaseDate).getFullYear().toString(),
-            Type: movie.genre
+            Type: movie.genre,
           }));
 
           setMovies(formattedMovies);
@@ -96,11 +94,6 @@ function MyLibrary() {
     }
   };
 
-  // Função para lidar com a remoção via `MovieDisplay`
-  const handleRemoveFromLibrary = (movie: MovieType) => {
-    handleOpenConfirmModal(movie);
-  };
-
   return (
     <MainBox>
       <Typography
@@ -133,7 +126,7 @@ function MyLibrary() {
         <MovieDisplay
           movies={movies}
           library={movies}
-          onAddToLibrary={() => { }} 
+          onRemoveFromLibrary={handleOpenConfirmModal} // Chama a função de remoção
         />
       ) : (
         <CenterBox>
