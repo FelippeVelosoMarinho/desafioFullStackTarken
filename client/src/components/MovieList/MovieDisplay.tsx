@@ -5,10 +5,15 @@ import { MovieContainer, MovieImage, MovieTitle, MovieRating, MovieButton, Movie
 import { api } from "../../api/index";
 
 interface MovieType {
-    imdbID: string;
-    Title: string;
-    Poster: string;
-    imdbRating?: string;
+        id?: string; 
+        name?: string;   
+        imdbID: string;
+        Title: string;
+        Poster: string;
+        posterUrl?: string;
+        imdbRating?: string;
+        imdbGrade?: string;
+        releaseDate?: string;
 }
 
 interface MovieProps {
@@ -34,10 +39,16 @@ const Movie: React.FC<MovieProps> = ({ movie, onAddToLibrary, isAdded }) => {
 
 interface MovieDisplayProps {
     movies: Array<{
+        id?: string; 
+        name?: string;   
         imdbID: string;
         Title: string;
         Poster: string;
+        posterUrl?: string;
         imdbRating?: string;
+        imdbGrade?: string;
+        releaseDate?: string;
+
     }>;
     onAddToLibrary: (movie: MovieType) => void;
     library: Array<{ imdbID: string }>;
@@ -51,9 +62,8 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movies, onAddToLibrary, lib
         const fetchFilmOnLibrary = async () => {
             try {
                 const response = await api.get("/library-movies/1/movies");
-                // Supondo que a resposta tenha a estrutura correta
                 const libraryMovies = response.data.map((movie: MovieType) => movie.imdbID);
-                setLibraryAdd(new Set(libraryMovies)); // Armazena como um Set
+                setLibraryAdd(new Set(libraryMovies)); 
             } catch (error) {
                 console.log("Erro: ", error);
                 notifyError("Erro ao buscar a biblioteca.");

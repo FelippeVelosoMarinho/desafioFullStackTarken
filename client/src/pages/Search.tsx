@@ -6,6 +6,12 @@ import SearchBar from "../components/SearchBar/SearchBar";
 import Toastr, { notifySuccess, notifyError } from "../components/Toastr";
 import MovieDisplay from "../components/MovieList/MovieDisplay";
 import { api, OMDbSearch, token } from "../api";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
+import Button from "@mui/material/Button";
 
 interface MovieType {
   imdbID: string;
@@ -21,8 +27,22 @@ function Search() {
   const [library, setLibrary] = useState<MovieType[]>([]);
   const [searchValue, setSearchValue] = useState("");
   const [loading, setLoading] = useState(false);
+  const [openConfirmModal, setOpenConfirmModal] = useState(false);
+  const [selectedMovie, setSelectedMovie] = useState<MovieType | null>(null);
 
-  // Busca de filmes na OMDb API
+  // Função para abrir o modal de confirmação
+  const handleOpenConfirmModal = (movie: MovieType) => {
+    setSelectedMovie(movie);
+    setOpenConfirmModal(true);
+  };
+
+  // Função para fechar o modal de confirmação
+  const handleCloseConfirmModal = () => {
+    setSelectedMovie(null);
+    setOpenConfirmModal(false);
+  };
+
+  // Função para buscar filmes na OMDb API
   const getMovieRequest = async (searchValue: string) => {
     if (searchValue.length < 3) {
       notifyError("Digite pelo menos 3 caracteres para a busca.");
@@ -69,18 +89,7 @@ function Search() {
     const isMovieInLibrary = library.some((m) => m.imdbID === movie.imdbID);
 
     if (isMovieInLibrary) {
-      try {
-        const response = await api.delete(`/movies/${movie.imdbID}`);
-        if (response.status === 200) {
-          notifySuccess("Filme removido da sua Biblioteca");
-          setLibrary((prevLibrary) => prevLibrary.filter((m) => m.imdbID !== movie.imdbID));
-        } else {
-          notifyError("Erro ao remover o filme da Biblioteca");
-        }
-      } catch (error) {
-        console.log("Erro: ", error);
-        notifyError("Erro ao remover o filme da Biblioteca");
-      }
+      handleOpenConfirmModal(movie); // Abre o modal para confirmar a remoção
     } else {
       try {
         const createMovieResponse = await api.post("/movies", {
@@ -96,12 +105,12 @@ function Search() {
         if (createMovieResponse.status === 201) {
           const addToLibraryResponse = await api.post("/library-movies/1/movies", {
             libraryId: 1,
-            movieId: movie.imdbID
+            movieId: movie.imdbID,
           });
 
           if (addToLibraryResponse.status === 201) {
             notifySuccess("Filme adicionado à sua Biblioteca");
-            setLibrary((prevLibrary) => [...prevLibrary, movie]); // Adiciona o filme à biblioteca local
+            setLibrary((prevLibrary) => [...prevLibrary, movie]);
           } else {
             notifyError("Erro ao adicionar o filme à Biblioteca");
           }
@@ -111,6 +120,28 @@ function Search() {
       } catch (error) {
         console.log("Erro: ", error);
         notifyError("Erro ao criar ou adicionar o filme à Biblioteca.");
+      }
+    }
+  };
+
+  // Função para remover o filme após a confirmação
+  const confirmRemoveMovie = async () => {
+    if (selectedMovie) {
+      try {
+        const response = await api.delete(`/movies/${selectedMovie.imdbID}`);
+        if (response.status === 200) {
+          notifySuccess("Filme removido da sua Biblioteca");
+          setLibrary((prevLibrary) =>
+            prevLibrary.filter((m) => m.imdbID !== selectedMovie.imdbID)
+          );
+        } else {
+          notifyError("Erro ao remover o filme da Biblioteca");
+        }
+      } catch (error) {
+        console.log("Erro: ", error);
+        notifyError("Erro ao remover o filme da Biblioteca");
+      } finally {
+        handleCloseConfirmModal(); 
       }
     }
   };
@@ -176,6 +207,28 @@ function Search() {
           )}
         </>
       )}
+      <Dialog
+        open={openConfirmModal}
+        onClose={handleCloseConfirmModal}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{"Remover Filme"}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Tem certeza que deseja remover o filme {selectedMovie?.Title} da sua
+            biblioteca?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseConfirmModal} color="primary">
+            Cancelar
+          </Button>
+          <Button onClick={confirmRemoveMovie} color="secondary" autoFocus>
+            Confirmar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </MainBox>
   );
 }
