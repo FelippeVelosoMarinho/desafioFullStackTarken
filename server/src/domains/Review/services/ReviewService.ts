@@ -55,7 +55,7 @@ class ReviewService {
      * @param id - ID da resenha.
      * @returns A resenha encontrada ou null se não existir.
      */
-    async findOne(id: number): Promise<Review | null> {
+    async findOne(id: string): Promise<Review | null> {
         return await prisma.review.findUnique({
             where: { id },
             include: {
@@ -75,7 +75,7 @@ class ReviewService {
      * @param data - Dados a serem atualizados.
      * @returns A resenha atualizada.
      */
-    async update(id: number, data: Partial<Review>): Promise<Review> {
+    async update(id: string, data: Partial<Review>): Promise<Review> {
         // Se o rating for atualizado, você pode adicionar validações adicionais
         if (data.rating && (data.rating < 1 || data.rating > 10)) {
             throw new Error("A nota deve estar entre 1 e 10.");
@@ -92,7 +92,7 @@ class ReviewService {
      * @param id - ID da resenha.
      * @returns A resenha removida.
      */
-    async remove(id: number): Promise<Review> {
+    async remove(id: string): Promise<Review> {
         return await prisma.review.delete({
             where: { id },
         });

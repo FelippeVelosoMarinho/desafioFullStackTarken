@@ -51,9 +51,9 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
  */
 router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = Number(req.params.id);
+    const id = req.params.id;
 
-    if (isNaN(id)) {
+    if (id === "") {
       return res.status(statusCodes.BAD_REQUEST).json({ error: "ID da resenha inválido." });
     }
 
@@ -76,10 +76,10 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
  */
 router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = Number(req.params.id);
+    const id = req.params.id;
     const { content, rating, userId, movieId } = req.body;
 
-    if (isNaN(id)) {
+    if (id === "") {
       return res.status(statusCodes.BAD_REQUEST).json({ error: "ID da resenha inválido." });
     }
 
@@ -103,9 +103,9 @@ router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
  */
 router.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = Number(req.params.id);
+    const id = req.params.id;
 
-    if (isNaN(id)) {
+    if (id === "") {
       return res.status(statusCodes.BAD_REQUEST).json({ error: "ID da resenha inválido." });
     }
 

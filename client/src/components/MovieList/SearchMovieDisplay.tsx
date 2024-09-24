@@ -1,5 +1,5 @@
 import React from "react";
-import Button from "@mui/material/Button";
+import { MovieContainer, MovieImage, MovieTitle, MovieRating, MovieButton, MovieInfo } from './index'; // Importa os componentes estilizados
 
 interface MovieType {
   imdbID: string;
@@ -27,32 +27,23 @@ const SearchMovieDisplay: React.FC<SearchMovieDisplayProps> = ({
   };
 
   return (
-    <div>
+    <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center" }}>
       {movies.map((movie) => (
-        <div key={movie.imdbID} style={{ marginBottom: "20px" }}>
-          <img src={movie.Poster} alt={movie.Title} />
-          <h3>{movie.Title}</h3>
-          <p>{movie.Year}</p>
-
-          {/* Verifica se o filme já está na biblioteca */}
-          {isMovieInLibrary(movie.imdbID) ? (
-            <Button
-              variant="contained"
-              color="secondary"
-              onClick={() => onAddToLibrary(movie)} // Chama a função de remoção
+        <MovieContainer key={movie.imdbID}>
+          <MovieImage src={movie.Poster} alt={movie.Title} />
+          <MovieInfo>
+            <MovieTitle>{movie.Title}</MovieTitle>
+            <MovieRating>⭐ {movie.imdbRating || "N/A"}</MovieRating>
+            <MovieButton
+              added={isMovieInLibrary(movie.imdbID)}
+              onClick={() => onAddToLibrary(movie)}
             >
-              Remover da Biblioteca
-            </Button>
-          ) : (
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => onAddToLibrary(movie)} // Chama a função de adição
-            >
-              Adicionar à Biblioteca
-            </Button>
-          )}
-        </div>
+              {isMovieInLibrary(movie.imdbID)
+                ? "Remover da Biblioteca"
+                : "Adicionar à Biblioteca"}
+            </MovieButton>
+          </MovieInfo>
+        </MovieContainer>
       ))}
     </div>
   );
