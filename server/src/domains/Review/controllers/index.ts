@@ -166,4 +166,33 @@ router.get("/movie/:movieId", async (req: Request, res: Response, next: NextFunc
   }
 });
 
+/**
+ * @route   DELETE /reviews/movie/:movieId
+ * @desc    Deleta resenhas por filme
+ * @access  Public
+ */
+router.delete("/movie/:movieId", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { movieId } = req.params;
+
+    if (!movieId || movieId.trim() === "") {
+      return res.status(400).json({ error: "movieId inválido." });
+    }
+
+    // Verifica se existem reviews associadas ao filme
+    const reviews = await ReviewService.findByMovie(movieId);
+    if (!reviews || reviews.length === 0) {
+      return res.status(404).json({ error: "Nenhuma review encontrada para este filme." });
+    }
+
+    // Deleta todas as reviews associadas ao movieId
+    await ReviewService.deleteByMovie(movieId);
+
+    return res.status(200).json({ message: "Todas as reviews do filme foram excluídas com sucesso." });
+  } catch (error) {
+    next(error);
+  }
+});
+
+
 export default router;

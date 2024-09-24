@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Modal,
+  Button,
 } from "react-native";
 import Carousel from "react-native-reanimated-carousel";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -22,10 +24,11 @@ export default function Library() {
   const [error, setError] = useState("");
   const [recording, setRecording] = useState(null);
   const [recordings, setRecordings] = useState([]);
-  const [reviews, setReviews] = useState<{ [key: string]: any }>({}); 
-  const [sound, setSound] = useState<Audio.Sound | null>(null); 
-  const [playbackStatus, setPlaybackStatus] = useState<any>(null); 
-// Armazenar as reviews de cada filme
+  const [reviews, setReviews] = useState<{ [key: string]: any }>({});
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [playbackStatus, setPlaybackStatus] = useState<any>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedMovie, setSelectedMovie] = useState<string | null>(null);
 
   interface MovieType {
     id: string;
@@ -150,6 +153,27 @@ export default function Library() {
     }
   };
 
+  const deleteReview = async (movieId: string) => {
+    try {
+      await api.delete(`/reviews/movie/${movieId}`);
+      setReviews((prevReviews) => {
+        const newReviews = { ...prevReviews };
+        delete newReviews[movieId];
+        return newReviews;
+      });
+      Toast.show({
+        type: "success",
+        text1: "Review excluída",
+        text2: "A review foi excluída com sucesso!",
+      });
+    } catch (error) {
+      console.error("Erro ao excluir review:", error);
+      Alert.alert("Erro", "Falha ao excluir review.");
+    } finally {
+      setShowDeleteModal(false);
+    }
+  };
+
   const playAudio = async (uri: string) => {
     try {
       const { sound: newSound } = await Audio.Sound.createAsync({ uri });
@@ -206,6 +230,17 @@ export default function Library() {
                 }
               >
                 {sound ? "Stop Review" : "Play Review"}
+              </Icon.Button>
+              <Icon.Button
+                name="delete"
+                backgroundColor="#FF6B6B"
+                style={styles.playButton}
+                onPress={() => {
+                  setSelectedMovie(item.imdbID);
+                  setShowDeleteModal(true);
+                }}
+              >
+                Excluir Review
               </Icon.Button>
               {playbackStatus && (
                 <Text style={styles.playbackText}>
@@ -270,6 +305,34 @@ export default function Library() {
       )}
 
       <Toast />
+
+      <Modal
+        visible={showDeleteModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowDeleteModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Delete audio</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to delete ”The call of the Wild” review?
+            </Text>
+            <View style={styles.modalButtons}>
+              <Button
+                title="Cancel"
+                onPress={() => setShowDeleteModal(false)}
+                color="#A1A1A1"
+              />
+              <Button
+                title="Delete"
+                onPress={() => selectedMovie && deleteReview(selectedMovie)}
+                color="#FE6D8E"
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -355,5 +418,42 @@ const styles = StyleSheet.create({
     height: 45,
     justifyContent: "center",
     alignItems: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Fundo semi-transparente
+  },
+  modalContent: {
+    width: "80%",
+    height: "70%",
+    padding: 20,
+    display: "flex",
+    justifyContent: "space-evenly",
+    backgroundColor: "#fff",
+    borderRadius: 15,
+    elevation: 5, // Sombra para Android
+    shadowColor: "#000", // Sombra para iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#12153D",
+    marginBottom: 10,
+    textAlign: "left",
+  },
+  modalMessage: {
+    fontSize: 18,
+    color: "#333",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  modalButtons: {
+    flexDirection: "column",
+    gap: 16,
   },
 });
