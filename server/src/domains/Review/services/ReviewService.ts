@@ -11,6 +11,7 @@ class ReviewService {
      */
     async create(data: {
         content: string;
+        audioUri: string;
         rating: number;
         userId: number;
         movieId: string;

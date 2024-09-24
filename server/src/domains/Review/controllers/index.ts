@@ -11,14 +11,18 @@ const router = Router();
  */
 router.post("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { content, rating, userId, movieId } = req.body;
+    const { content, audioUri, rating, userId, movieId } = req.body;
 
-    if (!content || rating === undefined || !userId || !movieId) {
-      return res.status(statusCodes.BAD_REQUEST).json({ error: "content, rating, userId e movieId são obrigatórios." });
+    if (!content && !audioUri) {
+      return res.status(statusCodes.BAD_REQUEST).json({ error: "content ou audioUri são obrigatórios." });
+    }
+    if (rating === undefined || !userId || !movieId) {
+      return res.status(statusCodes.BAD_REQUEST).json({ error: "rating, userId e movieId são obrigatórios." });
     }
 
     const review = await ReviewService.create({
       content,
+      audioUri,
       rating,
       userId,
       movieId,
@@ -29,6 +33,7 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
     next(error);
   }
 });
+
 
 /**
  * @route   GET /reviews
@@ -77,7 +82,11 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
 router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id;
-    const { content, rating, userId, movieId } = req.body;
+    const { content, audioUri, rating, userId, movieId } = req.body;
+
+    if (!content && !audioUri) {
+      return res.status(statusCodes.BAD_REQUEST).json({ error: "content ou audioUri são obrigatórios." });
+    }
 
     if (id === "") {
       return res.status(statusCodes.BAD_REQUEST).json({ error: "ID da resenha inválido." });
@@ -85,6 +94,7 @@ router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
 
     const updatedReview = await ReviewService.update(id, {
       content,
+      audioUri,
       rating,
       userId,
       movieId,

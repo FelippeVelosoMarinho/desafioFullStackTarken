@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Audio } from "expo-av";
 import {
   StyleSheet,
   Text,
@@ -19,6 +20,12 @@ export default function Library() {
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [recording, setRecording] = useState(null);
+  const [recordings, setRecordings] = useState([]);
+  const [reviews, setReviews] = useState<{ [key: string]: any }>({}); 
+  const [sound, setSound] = useState<Audio.Sound | null>(null); 
+  const [playbackStatus, setPlaybackStatus] = useState<any>(null); 
+// Armazenar as reviews de cada filme
 
   interface MovieType {
     id: string;
@@ -63,7 +70,122 @@ export default function Library() {
     fetchMovies();
   }, []);
 
+  // Função para buscar reviews de um filme específico
+  const fetchReviewForMovie = async (movieId: string) => {
+    try {
+      const response = await api.get(`/reviews/movie/${movieId}`);
+      if (response.data) {
+        setReviews((prevReviews) => ({
+          ...prevReviews,
+          [movieId]: response.data, // Armazena a review por movieId
+        }));
+      }
+    } catch (error) {
+      console.error("Erro ao buscar reviews:", error);
+    }
+  };
+
+  async function startRecording() {
+    try {
+      const perm = await Audio.requestPermissionsAsync();
+      if (perm.status === "granted") {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+        });
+        const { recording } = await Audio.Recording.createAsync(
+          Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY
+        );
+        setRecording(recording);
+      } else {
+        Alert.alert("Permissão de gravação não concedida.");
+      }
+    } catch (error) {
+      console.error("Erro ao iniciar gravação:", error);
+      Alert.alert("Erro", "Falha ao iniciar gravação.");
+    }
+  }
+
+  async function stopRecording(movieId: string) {
+    if (recording) {
+      setRecording(undefined);
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+
+      // Adiciona a gravação ao estado
+      setRecordings([...recordings, { uri }]);
+      console.log("Gravação parada:", uri);
+
+      // Salva a review com a gravação
+      await saveReview(movieId, uri);
+    }
+  }
+
+  const saveReview = async (movieId: string, audioUri: string) => {
+    console.log("Movie id e audio: ", movieId, " ||| ", audioUri);
+    try {
+      // Enviar a review para o backend
+      await api.post("/reviews", {
+        content: "Review gravada por áudio.",
+        audioUri: audioUri,
+        rating: 5,
+        userId: 2,
+        movieId: movieId,
+      });
+
+      // Atualizar o estado das reviews localmente após o envio
+      setReviews((prevReviews) => ({
+        ...prevReviews,
+        [movieId]: { audioUri },
+      }));
+
+      Toast.show({
+        type: "success",
+        text1: "Sucesso",
+        text2: "Review gravada com sucesso!",
+      });
+    } catch (error) {
+      console.error("Erro ao salvar review:", error);
+      Alert.alert("Erro", "Falha ao salvar review.");
+    }
+  };
+
+  const playAudio = async (uri: string) => {
+    try {
+      const { sound: newSound } = await Audio.Sound.createAsync({ uri });
+      setSound(newSound);
+
+      newSound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.isPlaying) {
+          setPlaybackStatus(status);
+        }
+      });
+
+      await newSound.playAsync();
+    } catch (error) {
+      console.error("Erro ao reproduzir áudio:", error);
+    }
+  };
+
+  const stopAudio = async () => {
+    if (sound) {
+      await sound.stopAsync();
+      setSound(null);
+      setPlaybackStatus(null);
+    }
+  };
+
   const renderMovieItem = ({ item }: { item: MovieType }) => {
+    // Verifica se há uma review para o filme atual
+    const review = reviews[item.imdbID];
+
+    // Busca a review para o filme quando ele é renderizado
+    useEffect(() => {
+      if (!review) {
+        fetchReviewForMovie(item.imdbID!); // Chama a função para buscar a review
+      }
+    }, [item.imdbID]);
+
     return (
       <View style={styles.movieCard}>
         <Image source={{ uri: item.Poster }} style={styles.posterImage} />
@@ -73,12 +195,46 @@ export default function Library() {
             <Icon name="star" size={18} color="#FFD700" />
             <Text style={styles.ratingText}>{item.imdbRating}</Text>
           </View>
-          <Icon.Button
-            name="mic"
-            backgroundColor="#6CD3AE"
-            style={styles.microphoneButton}
-            onPress={() => Alert.alert(`Gravar comentário sobre ${item.Title}`)}
-          />
+          {review && review.audioUri ? (
+            <>
+              <Icon.Button
+                name={sound ? "stop" : "play-arrow"}
+                backgroundColor="#6CD3AE"
+                style={styles.playButton}
+                onPress={() =>
+                  sound ? stopAudio() : playAudio(review.audioUri)
+                }
+              >
+                {sound ? "Stop Review" : "Play Review"}
+              </Icon.Button>
+              {playbackStatus && (
+                <Text style={styles.playbackText}>
+                  {`Tempo restante: ${
+                    Math.floor(playbackStatus.durationMillis / 1000) -
+                    Math.floor(playbackStatus.positionMillis / 1000)
+                  }s`}
+                </Text>
+              )}
+            </>
+          ) : recording ? (
+            <Icon.Button
+              name="stop"
+              backgroundColor="#FF6B6B"
+              style={styles.microphoneButton}
+              onPress={() => stopRecording(item.imdbID!)} // Use imdbID
+            >
+              Stop Recording
+            </Icon.Button>
+          ) : (
+            <Icon.Button
+              name="mic"
+              backgroundColor="#6CD3AE"
+              style={styles.microphoneButton}
+              onPress={startRecording}
+            >
+              Record Review
+            </Icon.Button>
+          )}
         </View>
       </View>
     );
@@ -96,7 +252,7 @@ export default function Library() {
         <Carousel
           loop
           width={width}
-          height={height - 100} // Deixa o slider ocupar toda a tela abaixo do título
+          height={height - 100}
           autoPlay={false}
           data={movies}
           scrollAnimationDuration={1000}
@@ -133,18 +289,17 @@ const styles = StyleSheet.create({
     textAlign: "left",
   },
   movieCard: {
-    width: width * 0.9, 
-    height: height * 0.8, 
+    width: width * 0.9,
+    height: height * 0.8,
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
     marginHorizontal: 10,
     backgroundColor: "#fff",
-
   },
   posterImage: {
     width: "95%",
-    height: "73%", 
+    height: "73%",
     borderRadius: 15,
     marginBottom: 10,
   },
@@ -170,8 +325,10 @@ const styles = StyleSheet.create({
   },
   microphoneButton: {
     display: "flex",
-    borderRadius: 30,
+    borderRadius: 50,
     height: 45,
+    justifyContent: "center",
+    alignItems: "center",
   },
   error: {
     color: "red",
@@ -192,5 +349,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 16,
     color: "#555",
+  },
+  playButton: {
+    borderRadius: 50,
+    height: 45,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
