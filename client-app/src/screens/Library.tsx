@@ -10,6 +10,7 @@ import {
   Dimensions,
   Modal,
   Button,
+  TouchableOpacity,
 } from "react-native";
 import Carousel from "react-native-reanimated-carousel";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -29,6 +30,8 @@ export default function Library() {
   const [playbackStatus, setPlaybackStatus] = useState<any>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<string | null>(null);
+  const [isRecordingModalVisible, setIsRecordingModalVisible] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
 
   interface MovieType {
     id: string;
@@ -88,6 +91,23 @@ export default function Library() {
     }
   };
 
+  useEffect(() => {
+    let interval;
+
+    if (recording) {
+      // Inicia o intervalo quando a gravação começa
+      interval = setInterval(() => {
+        setRecordingTime((prevTime) => prevTime + 1);
+      }, 1000);
+    } else {
+      // Limpa o intervalo quando a gravação para
+      clearInterval(interval);
+    }
+
+    // Retorna uma função de limpeza para o intervalo
+    return () => clearInterval(interval);
+  }, [recording]); // Dependência em 'recording'
+
   async function startRecording() {
     try {
       const perm = await Audio.requestPermissionsAsync();
@@ -100,6 +120,8 @@ export default function Library() {
           Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY
         );
         setRecording(recording);
+        setIsRecordingModalVisible(true);
+        setRecordingTime(0);
       } else {
         Alert.alert("Permissão de gravação não concedida.");
       }
@@ -112,6 +134,7 @@ export default function Library() {
   async function stopRecording(movieId: string) {
     if (recording) {
       setRecording(undefined);
+      setIsRecordingModalVisible(false);
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
 
@@ -220,55 +243,54 @@ export default function Library() {
             <Text style={styles.ratingText}>{item.imdbRating}</Text>
           </View>
           {review && review.audioUri ? (
-            <>
-              <Icon.Button
-                name={sound ? "stop" : "play-arrow"}
-                backgroundColor="#6CD3AE"
-                style={styles.playButton}
-                onPress={() =>
-                  sound ? stopAudio() : playAudio(review.audioUri)
-                }
-              >
-                {sound ? "Stop Review" : "Play Review"}
-              </Icon.Button>
-              <Icon.Button
-                name="delete"
-                backgroundColor="#FF6B6B"
-                style={styles.playButton}
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={styles.deleteButton}
                 onPress={() => {
                   setSelectedMovie(item.imdbID);
                   setShowDeleteModal(true);
                 }}
               >
-                Excluir Review
-              </Icon.Button>
-              {playbackStatus && (
-                <Text style={styles.playbackText}>
-                  {`Tempo restante: ${
-                    Math.floor(playbackStatus.durationMillis / 1000) -
-                    Math.floor(playbackStatus.positionMillis / 1000)
-                  }s`}
-                </Text>
-              )}
-            </>
+                <Icon name="delete" size={24} color="#fff" />
+              </TouchableOpacity>
+
+              <View style={styles.playButtonContainer}>
+                {playbackStatus && (
+                  <Text style={styles.playbackText}>
+                    {`${
+                      Math.floor(playbackStatus.durationMillis / 1000) -
+                      Math.floor(playbackStatus.positionMillis / 1000)
+                    }s`}
+                  </Text>
+                )}
+                <TouchableOpacity
+                  style={styles.playButton}
+                  onPress={() =>
+                    sound ? stopAudio() : playAudio(review.audioUri)
+                  }
+                >
+                  <Icon
+                    name={sound ? "stop" : "play-arrow"}
+                    size={24}
+                    color="#FFF"
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
           ) : recording ? (
-            <Icon.Button
-              name="stop"
-              backgroundColor="#FF6B6B"
+            <TouchableOpacity
               style={styles.microphoneButton}
-              onPress={() => stopRecording(item.imdbID!)} // Use imdbID
+              onPressOut={() => stopRecording(item.imdbID!)}
             >
-              Stop Recording
-            </Icon.Button>
+              <Icon name="stop" size={24} color="#FFF" />
+            </TouchableOpacity>
           ) : (
-            <Icon.Button
-              name="mic"
-              backgroundColor="#6CD3AE"
+            <TouchableOpacity
               style={styles.microphoneButton}
-              onPress={startRecording}
+              onPressIn={() => startRecording()}
             >
-              Record Review
-            </Icon.Button>
+              <Icon name="mic" size={24} color="#FFF" />
+            </TouchableOpacity>
           )}
         </View>
       </View>
@@ -306,33 +328,60 @@ export default function Library() {
 
       <Toast />
 
+      {loading && (
+        <ActivityIndicator
+          size="large"
+          color="#0000ff"
+          style={styles.loadingIndicator}
+        />
+      )}
+      {error && <Text style={styles.errorText}>{error}</Text>}
       <Modal
-        visible={showDeleteModal}
+        visible={isRecordingModalVisible}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowDeleteModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Delete audio</Text>
-            <Text style={styles.modalMessage}>
-              Are you sure you want to delete ”The call of the Wild” review?
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContentMessage}>
+            <Text style={styles.modalRecordMessage}>
+              <Icon name="circle" size={24} color="red" />
+              Keep Holding to Record
             </Text>
-            <View style={styles.modalButtons}>
-              <Button
-                title="Cancel"
-                onPress={() => setShowDeleteModal(false)}
-                color="#A1A1A1"
-              />
-              <Button
-                title="Delete"
-                onPress={() => selectedMovie && deleteReview(selectedMovie)}
-                color="#FE6D8E"
-              />
-            </View>
+            <Text style={styles.modalRecordMessage}>
+              Time: {recordingTime}s
+            </Text>
           </View>
         </View>
       </Modal>
+      {showDeleteModal && (
+        <Modal
+          visible={showDeleteModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowDeleteModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Delete audio</Text>
+              <Text style={styles.modalMessage}>
+                Are you sure you want to delete ”The call of the Wild” review?
+              </Text>
+              <View style={styles.modalButtons}>
+                <Button
+                  title="Cancel"
+                  onPress={() => setShowDeleteModal(false)}
+                  color="#A1A1A1"
+                />
+                <Button
+                  title="Delete"
+                  onPress={() => selectedMovie && deleteReview(selectedMovie)}
+                  color="#FE6D8E"
+                />
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -387,11 +436,52 @@ const styles = StyleSheet.create({
     color: "#FFD700",
   },
   microphoneButton: {
-    display: "flex",
+    backgroundColor: "#4CAF50", // Cor de fundo verde
     borderRadius: 50,
-    height: 45,
+    height: 60,
+    width: 60, // Ajuste para tornar o botão circular
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5, // Para Android
+  },
+  playButton: {
+    backgroundColor: "#A1A1A1", // Cor de fundo azul
+    borderRadius: 50,
+    height: 60,
+    width: 60, // Ajuste para tornar o botão circular
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5, // Para Android
+  },
+  deleteButton: {
+    backgroundColor: "#FF6B6B", // Cor de fundo vermelho
+    borderRadius: 50,
+    height: 45,
+    width: 45, // Ajuste para tornar o botão circular
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5, // Para Android
   },
   error: {
     color: "red",
@@ -413,9 +503,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#555",
   },
-  playButton: {
-    borderRadius: 50,
-    height: 45,
+  buttonContainer: {
+    display: "flex",
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  playButtonContainer: {
+    width: "100%",
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -425,9 +521,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.5)", // Fundo semi-transparente
   },
+  modalContainer: {
+    width: "90%",
+    height: "65%",
+    top: 162,
+    left: 17,
+    borderRadius: 40,
+    opacity: 0.9,
+    color: "#FFF",
+    backgroundColor: "#12153D",
+  },
+  modalContentMessage: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   modalContent: {
     width: "80%",
-    height: "70%",
+    height: "50%",
     padding: 20,
     display: "flex",
     justifyContent: "space-evenly",
@@ -451,6 +562,12 @@ const styles = StyleSheet.create({
     color: "#333",
     marginBottom: 20,
     textAlign: "center",
+  },
+  modalRecordMessage: {
+    fontSize: 22,
+    color: "#fff",
+    marginBottom: 20,
+    textAlign: "right",
   },
   modalButtons: {
     flexDirection: "column",
