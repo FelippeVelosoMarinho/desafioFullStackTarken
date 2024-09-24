@@ -15,7 +15,7 @@ dotenv.config();
 const app: Express = express();
 
 const corsOptions: CorsOptions = {
-  origin: process.env.APP_URL || "*", // Use "*" para testes, substitua por URLs específicas em produção
+  origin: process.env.APP_URL || process.env.APP_URL_NATIVE || "*", 
   credentials: true,
 };
 

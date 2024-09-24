@@ -1,7 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View, Image, ActivityIndicator, Alert } from "react-native";
-import Toast from 'react-native-toast-message';
+import {
+  StyleSheet,
+  Text,
+  View,
+  Image,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+} from "react-native";
+import Carousel from "react-native-reanimated-carousel";
+import Icon from "react-native-vector-icons/MaterialIcons";
+import Toast from "react-native-toast-message";
 import { api } from "../api";
+
+const { width, height } = Dimensions.get("window");
 
 export default function Library() {
   const [movies, setMovies] = useState([]);
@@ -18,8 +30,7 @@ export default function Library() {
     releaseDate?: string;
     genre?: string;
   }
-  
-  // Função para buscar filmes na biblioteca
+
   useEffect(() => {
     const fetchMovies = async () => {
       try {
@@ -40,9 +51,9 @@ export default function Library() {
         console.error("Error fetching movies from library:", error);
         setError("Erro ao buscar filmes.");
         Toast.show({
-          type: 'error',
-          text1: 'Erro',
-          text2: 'Erro ao buscar filmes da biblioteca.',
+          type: "error",
+          text1: "Erro",
+          text2: "Erro ao buscar filmes da biblioteca.",
         });
       } finally {
         setLoading(false);
@@ -52,37 +63,24 @@ export default function Library() {
     fetchMovies();
   }, []);
 
-  // Função para remover um filme
-  const removeMovie = async (movie: { imdbID: string | never; }) => {
-    try {
-      const response = await api.delete(`/movies/${movie.imdbID}`);
-      if (response.status === 200) {
-        Toast.show({
-          type: 'success',
-          text1: 'Sucesso',
-          text2: 'Filme removido da biblioteca.',
-        });
-        setMovies((prevMovies) => prevMovies.filter((m) => m.imdbID !== movie.imdbID));
-      }
-    } catch (error) {
-      console.error("Error removing movie:", error);
-      Toast.show({
-        type: 'error',
-        text1: 'Erro',
-        text2: 'Erro ao remover o filme da biblioteca.',
-      });
-    }
-  };
-
-  // Confirmação de remoção
-  const confirmRemoveMovie = (movie: MovieType) => {
-    Alert.alert(
-      "Remover Filme",
-      `Tem certeza que deseja remover o filme ${movie.Title}?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        { text: "Confirmar", onPress: () => removeMovie(movie) },
-      ]
+  const renderMovieItem = ({ item }: { item: MovieType }) => {
+    return (
+      <View style={styles.movieCard}>
+        <Image source={{ uri: item.Poster }} style={styles.posterImage} />
+        <View style={styles.infoContainer}>
+          <Text style={styles.movieTitle}>{item.Title}</Text>
+          <View style={styles.ratingContainer}>
+            <Icon name="star" size={18} color="#FFD700" />
+            <Text style={styles.ratingText}>{item.imdbRating}</Text>
+          </View>
+          <Icon.Button
+            name="mic"
+            backgroundColor="#6CD3AE"
+            style={styles.microphoneButton}
+            onPress={() => Alert.alert(`Gravar comentário sobre ${item.Title}`)}
+          />
+        </View>
+      </View>
     );
   };
 
@@ -95,22 +93,22 @@ export default function Library() {
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
       ) : movies.length > 0 ? (
-        <View>
-          {movies.map((movie) => (
-            <View key={movie.imdbID} style={styles.movieItem}>
-              <Image source={{ uri: movie.Poster }} style={styles.movieImage} />
-              <Text style={styles.movieTitle}>{movie.Title}</Text>
-              <Text onPress={() => confirmRemoveMovie(movie)} style={styles.removeText}>
-                Remover
-              </Text>
-            </View>
-          ))}
-        </View>
+        <Carousel
+          loop
+          width={width}
+          height={height - 100} // Deixa o slider ocupar toda a tela abaixo do título
+          autoPlay={false}
+          data={movies}
+          scrollAnimationDuration={1000}
+          onSnapToItem={(index: any) => console.log("Current index:", index)}
+          renderItem={({ index }) => renderMovieItem({ item: movies[index] })}
+        />
       ) : (
         <View style={styles.centerContainer}>
           <Image source={require("../assets/loupe.png")} style={styles.image} />
           <Text style={styles.subtitle}>
-            It looks like there are no movies in your library! Go to your web application and add some!
+            It looks like there are no movies in your library! Go to your web
+            application and add some!
           </Text>
         </View>
       )}
@@ -125,53 +123,74 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     paddingTop: 50,
-    paddingHorizontal: 20,
-  },
-  centerContainer: {
-    display: "flex",
-    height: "75%",
-    alignItems: "center",
-    justifyContent: "space-between",
   },
   title: {
     color: "#12153D",
     fontSize: 28,
     fontWeight: "bold",
-    marginBottom: 20,
+    marginBottom: 10,
+    marginLeft: 20,
+    textAlign: "left",
   },
-  movieItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
+  movieCard: {
+    width: width * 0.9, 
+    height: height * 0.8, 
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: 10,
+    backgroundColor: "#fff",
+
   },
-  movieImage: {
-    width: 100,
-    height: 150,
+  posterImage: {
+    width: "95%",
+    height: "73%", 
+    borderRadius: 15,
+    marginBottom: 10,
+  },
+  infoContainer: {
+    alignItems: "center",
   },
   movieTitle: {
-    flex: 1,
-    marginLeft: 10,
-    fontSize: 18,
-  },
-  removeText: {
-    color: "red",
+    fontSize: 20,
     fontWeight: "bold",
+    color: "#12153D",
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  ratingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  ratingText: {
+    marginLeft: 5,
+    fontSize: 16,
+    color: "#FFD700",
+  },
+  microphoneButton: {
+    display: "flex",
+    borderRadius: 30,
+    height: 45,
   },
   error: {
     color: "red",
     fontSize: 18,
+    textAlign: "center",
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   image: {
-    width: 180,
-    height: 180,
-    marginTop: 120,
+    width: 100,
+    height: 100,
+    marginBottom: 20,
   },
   subtitle: {
-    fontSize: 24,
-    fontWeight: "400",
-    lineHeight: 27.6,
     textAlign: "center",
-    color: "#A1A1A1",
-    paddingHorizontal: 20,
+    fontSize: 16,
+    color: "#555",
   },
 });
