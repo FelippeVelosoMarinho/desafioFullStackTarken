@@ -30,6 +30,24 @@ function Search() {
   const [openConfirmModal, setOpenConfirmModal] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<MovieType | null>(null);
 
+  const fetchLibrary = async () => {
+    try {
+      const response = await api.get("/libraries/2");
+      if (response.data && response.data.movies) {
+        setLibrary(response.data.movies);
+      } else {
+        throw new Error("Erro ao buscar a biblioteca.");
+      }
+    } catch (error) {
+      console.log("Erro: ", error);
+      notifyError("Erro ao buscar a biblioteca.");
+    }
+  };
+  // Carrega a biblioteca do usuário
+  useEffect(() => {
+    fetchLibrary();
+  }, []);
+
   // Função para abrir o modal de confirmação
   const handleOpenConfirmModal = (movie: MovieType) => {
     setSelectedMovie(movie);
@@ -44,6 +62,8 @@ function Search() {
 
   // Função para buscar filmes na OMDb API
   const getMovieRequest = async (searchValue: string) => {
+    fetchLibrary(); // Você pode querer deixar isso fora da função ou usar um debounce
+
     if (searchValue.length < 3) {
       notifyError("Digite pelo menos 3 caracteres para a busca.");
       return;
@@ -51,9 +71,19 @@ function Search() {
 
     setLoading(true);
     try {
-      const response = await OMDbSearch.get(`?s=${encodeURIComponent(searchValue)}&apikey=${token}`);
+      const response = await OMDbSearch.get(
+        `?s=${encodeURIComponent(searchValue)}&apikey=${token}`
+      );
       if (response.data.Search) {
-        setMovies(response.data.Search);
+        const moviesWithLibraryStatus = response.data.Search.map(
+          (movie: MovieType) => ({
+            ...movie,
+            isInLibrary: library.some(
+              (libMovie) => libMovie.imdbID === movie.imdbID
+            ),
+          })
+        );
+        setMovies(moviesWithLibraryStatus);
       } else {
         setMovies([]);
       }
@@ -65,24 +95,6 @@ function Search() {
       setLoading(false);
     }
   };
-
-  // Carrega a biblioteca do usuário
-  useEffect(() => {
-    const fetchLibrary = async () => {
-      try {
-        const response = await api.get("/libraries/2");
-        if (response.data && response.data.movies) {
-          setLibrary(response.data.movies);
-        } else {
-          throw new Error("Erro ao buscar a biblioteca.");
-        }
-      } catch (error) {
-        console.log("Erro: ", error);
-        notifyError("Erro ao buscar a biblioteca.");
-      }
-    };
-    fetchLibrary();
-  }, []);
 
   // Função para adicionar ou remover filme da biblioteca
   const addFavoriteMovie = async (movie: MovieType) => {
@@ -103,10 +115,13 @@ function Search() {
         });
 
         if (createMovieResponse.status === 201) {
-          const addToLibraryResponse = await api.post("/library-movies/1/movies", {
-            libraryId: 1,
-            movieId: movie.imdbID,
-          });
+          const addToLibraryResponse = await api.post(
+            "/library-movies/1/movies",
+            {
+              libraryId: 1,
+              movieId: movie.imdbID,
+            }
+          );
 
           if (addToLibraryResponse.status === 201) {
             notifySuccess("Filme adicionado à sua Biblioteca");
@@ -124,7 +139,7 @@ function Search() {
     }
   };
 
-   // Função para remover o filme após a confirmação
+  // Função para remover o filme após a confirmação
   const confirmRemoveMovie = async () => {
     if (selectedMovie) {
       try {
@@ -141,11 +156,10 @@ function Search() {
         console.log("Erro: ", error);
         notifyError("Erro ao remover o filme da Biblioteca");
       } finally {
-        handleCloseConfirmModal(); 
+        handleCloseConfirmModal();
       }
     }
   };
-
 
   return (
     <MainBox>

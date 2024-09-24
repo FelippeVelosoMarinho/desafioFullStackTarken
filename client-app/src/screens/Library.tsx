@@ -16,6 +16,10 @@ import Carousel from "react-native-reanimated-carousel";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import Toast from "react-native-toast-message";
 import { api } from "../api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import NetInfo from "@react-native-community/netinfo";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
 
 const { width, height } = Dimensions.get("window");
 
@@ -32,6 +36,9 @@ export default function Library() {
   const [selectedMovie, setSelectedMovie] = useState<string | null>(null);
   const [isRecordingModalVisible, setIsRecordingModalVisible] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [reviewsStatus, setReviewsStatus] = useState<{ [key: string]: string }>(
+    {}
+  );
 
   interface MovieType {
     id: string;
@@ -44,69 +51,120 @@ export default function Library() {
     genre?: string;
   }
 
-  useEffect(() => {
-    const fetchMovies = async () => {
-      try {
-        const response = await api.get("/library-movies/1/movies");
-        if (response.data) {
-          const formattedMovies = response.data.map((movie: MovieType) => ({
-            imdbID: movie.id,
-            Title: movie.name,
-            Poster: movie.posterUrl,
-            imdbRating: movie.imdbGrade?.toString() || "N/A",
-            Year: movie.releaseDate,
-            Type: movie.genre,
-          }));
+  // Sincronização das reviews pendentes
+  const syncPendingReviews = async () => {
+    const isConnected = await NetInfo.fetch().then(
+      (state) => state.isConnected
+    );
 
-          setMovies(formattedMovies);
+    if (isConnected) {
+      try {
+        const pendingReviews = await AsyncStorage.getItem("pendingReviews");
+        if (pendingReviews) {
+          const reviews = JSON.parse(pendingReviews);
+          for (const review of reviews) {
+            await api.post("/reviews", {
+              content: "Review gravada por áudio.",
+              audioUri: review.audioUri,
+              rating: 5,
+              userId: 2,
+              movieId: review.movieId,
+            });
+          }
+          await AsyncStorage.removeItem("pendingReviews"); // Remove após enviar
         }
       } catch (error) {
-        console.error("Error fetching movies from library:", error);
-        setError("Erro ao buscar filmes.");
-        Toast.show({
-          type: "error",
-          text1: "Erro",
-          text2: "Erro ao buscar filmes da biblioteca.",
-        });
-      } finally {
-        setLoading(false);
+        console.error("Erro ao sincronizar reviews:", error);
       }
-    };
+    }
+  };
 
-    fetchMovies();
+  useEffect(() => {
+    syncPendingReviews();
   }, []);
 
-  // Função para buscar reviews de um filme específico
+  // Função modificada para buscar review de um filme
   const fetchReviewForMovie = async (movieId: string) => {
     try {
       const response = await api.get(`/reviews/movie/${movieId}`);
       if (response.data) {
-        setReviews((prevReviews) => ({
-          ...prevReviews,
-          [movieId]: response.data, // Armazena a review por movieId
+        // Atualizar o status da review para o filme correspondente
+        setReviewsStatus((prevStatus) => ({
+          ...prevStatus,
+          [movieId]: "loaded", // ou outro status que você desejar
+        }));
+        return response.data;
+      } else {
+        setReviewsStatus((prevStatus) => ({
+          ...prevStatus,
+          [movieId]: "noReview", // ou outro status indicando ausência de review
         }));
       }
     } catch (error) {
-      console.error("Erro ao buscar reviews:", error);
+      console.error(`Error fetching review for movie ${movieId}:`, error);
+      setReviewsStatus((prevStatus) => ({
+        ...prevStatus,
+        [movieId]: "error",
+      }));
     }
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchMoviesAndReviews = async () => {
+        try {
+          const response = await api.get("/library-movies/1/movies");
+          if (response.data) {
+            const formattedMovies = response.data.map((movie: MovieType) => ({
+              imdbID: movie.id,
+              Title: movie.name,
+              Poster: movie.posterUrl,
+              imdbRating: movie.imdbGrade?.toString() || "N/A",
+              Year: movie.releaseDate,
+              Type: movie.genre,
+            }));
+            setMovies(formattedMovies);
+
+            // Após carregar os filmes, buscar as reviews de cada filme
+            formattedMovies.forEach(async (movie: MovieType) => {
+              await fetchReviewForMovie(movie.imdbID!);
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching movies from library:", error);
+          setError("Erro ao buscar filmes.");
+          Toast.show({
+            type: "error",
+            text1: "Erro",
+            text2: "Erro ao buscar filmes da biblioteca.",
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchMoviesAndReviews();
+
+      // Limpeza opcional
+      return () => {
+        setLoading(true); // Pode resetar o estado aqui se necessário
+      };
+    }, [])
+  );
 
   useEffect(() => {
     let interval;
 
     if (recording) {
-      // Inicia o intervalo quando a gravação começa
       interval = setInterval(() => {
         setRecordingTime((prevTime) => prevTime + 1);
       }, 1000);
     } else {
-      // Limpa o intervalo quando a gravação para
       clearInterval(interval);
     }
 
-    // Retorna uma função de limpeza para o intervalo
     return () => clearInterval(interval);
-  }, [recording]); // Dependência em 'recording'
+  }, [recording]);
 
   async function startRecording() {
     try {
@@ -148,28 +206,44 @@ export default function Library() {
   }
 
   const saveReview = async (movieId: string, audioUri: string) => {
-    console.log("Movie id e audio: ", movieId, " ||| ", audioUri);
+    const isConnected = await NetInfo.fetch().then(
+      (state) => state.isConnected
+    );
+
     try {
-      // Enviar a review para o backend
-      await api.post("/reviews", {
-        content: "Review gravada por áudio.",
-        audioUri: audioUri,
-        rating: 5,
-        userId: 2,
-        movieId: movieId,
-      });
+      if (isConnected) {
+        await api.post("/reviews", {
+          content: "Review gravada por áudio.",
+          audioUri: audioUri,
+          rating: 5,
+          userId: 2,
+          movieId: movieId,
+        });
 
-      // Atualizar o estado das reviews localmente após o envio
-      setReviews((prevReviews) => ({
-        ...prevReviews,
-        [movieId]: { audioUri },
-      }));
+        setReviews((prevReviews) => ({
+          ...prevReviews,
+          [movieId]: { audioUri },
+        }));
 
-      Toast.show({
-        type: "success",
-        text1: "Sucesso",
-        text2: "Review gravada com sucesso!",
-      });
+        Toast.show({
+          type: "success",
+          text1: "Sucesso",
+          text2: "Review gravada com sucesso!",
+        });
+      } else {
+        // Salva a review pendente localmente
+        const pendingReviews = await AsyncStorage.getItem("pendingReviews");
+        const reviews = pendingReviews ? JSON.parse(pendingReviews) : [];
+
+        reviews.push({ movieId, audioUri });
+        await AsyncStorage.setItem("pendingReviews", JSON.stringify(reviews));
+
+        Toast.show({
+          type: "info",
+          text1: "Offline",
+          text2: "Review salva localmente. Será enviada quando online.",
+        });
+      }
     } catch (error) {
       console.error("Erro ao salvar review:", error);
       Alert.alert("Erro", "Falha ao salvar review.");
@@ -223,12 +297,13 @@ export default function Library() {
   };
 
   const renderMovieItem = ({ item }: { item: MovieType }) => {
-    // Verifica se há uma review para o filme atual
+    // Verifica o status da review para o filme atual
     const review = reviews[item.imdbID];
+    const reviewStatus = reviewsStatus[item.imdbID];
 
     // Busca a review para o filme quando ele é renderizado
     useEffect(() => {
-      if (!review) {
+      if (!reviewStatus) {
         fetchReviewForMovie(item.imdbID!); // Chama a função para buscar a review
       }
     }, [item.imdbID]);
@@ -242,7 +317,8 @@ export default function Library() {
             <Icon name="star" size={18} color="#FFD700" />
             <Text style={styles.ratingText}>{item.imdbRating}</Text>
           </View>
-          {review && review.audioUri ? (
+
+          {review && reviewStatus === "loaded" && review?.audioUri ? (
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={styles.deleteButton}

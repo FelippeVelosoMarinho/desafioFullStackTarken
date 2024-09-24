@@ -38,7 +38,7 @@ const Movie: React.FC<MovieProps> = ({ movie, onAddToLibrary, onRemoveFromLibrar
                 <MovieTitle>{movie.Title}</MovieTitle>
                 <MovieRating>⭐ {movie.imdbRating || "N/A"}</MovieRating>
                 <MovieButton added={isAdded} onClick={handleButtonClick}>
-                    {isAdded ? "Remove from My Library" : "Add to My Library"}
+                    {isAdded ? "Remove" : "Add to My Library"}
                 </MovieButton>
             </MovieInfo>
         </MovieContainer>

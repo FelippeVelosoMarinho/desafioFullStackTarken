@@ -39,8 +39,8 @@ const SearchMovieDisplay: React.FC<SearchMovieDisplayProps> = ({
               onClick={() => onAddToLibrary(movie)}
             >
               {isMovieInLibrary(movie.imdbID)
-                ? "Remover da Biblioteca"
-                : "Adicionar à Biblioteca"}
+                ? "Remove"
+                : "Add to My Library"}
             </MovieButton>
           </MovieInfo>
         </MovieContainer>
